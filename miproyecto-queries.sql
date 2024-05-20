@@ -1,8 +1,12 @@
--- 1. Obtener el nombre de los árbitros y la cantidad de partidos en los que han participado como árbitros
-select nombre , apellidos,  count(*) as numero_partidos_arbitrados 
-from arbitro a inner join partido p 
-on a.id_arbitro = p.ARBITRO_id_arbitro
-group by nombre, apellidos ;
+-- 1. Mostrar los nombres de los equipos y el número total de goles marcados por cada uno en todos los partidos. 
+select e.nombre_equipo, SUM(g.minuto) as goles_marcados
+from equipo e inner join fichajes f
+on e.nombre_equipo = f.EQUIPO_nombre_equipo inner join jugador j
+on f.JUGADOR_dni = j.dni inner join gol g
+on j.dni = g.jugador_marca
+group by e.nombre_equipo
+order by goles_marcados desc;
+
 
 -- 2. Obtener el nombre del estadio y la cantidad total de partidos jugados en ese estadio
 select nombre_estadio, count(*) as total_partidos
@@ -11,10 +15,16 @@ on e.nombre_estadio = j.ESTADIO_nombre_estadio left join partido p
 on j.EQUIPO_nombre_equipo = p.EQUIPO_nombre_local or j.EQUIPO_nombre_equipo = p.EQUIPO_nombre_visitante 
 group by nombre_estadio;
 
--- 3. Obtener el nombre y apellidos de los árbitros cuyo teléfono comienza con '23' y la nacionalidad es 'Español'
-SELECT nombre, apellidos, telefono, nacionalidad 
-FROM arbitro
-WHERE telefono LIKE '23%' AND nacionalidad = 'Español';
+-- 3. Obtener los arbitros que han arbitrado mas que la media de los partidos arbitrados
+select a.id_arbitro, a.nombre, a.apellidos, count(p.id_partido) as partidos_arbitrados
+from arbitro a inner join partido p
+on a.id_arbitro = p.ARBITRO_id_arbitro
+group by a.id_arbitro, a.nombre, a.apellidos
+having count(p.id_partido) > (
+   select count(p2.id_partido) / count(distinct p2.ARBITRO_id_arbitro)
+   from partido p2
+);
+
 
 -- 4. Obtener la cantidad de partidos jugados por cada equipo en una temporada específica y el resultado de cada partido
 select nombre_equipo, t.nombre_temporada, count(p.id_partido) as Partidos_jugados, group_concat(p.resultado) as Resultados  
@@ -33,10 +43,13 @@ group by j.dni, t.nombre_temporada ;
 
 -- Primera vista
 create view primera as
-	select nombre , apellidos,  count(*) as numero_partidos_arbitrados 
-	from arbitro a inner join partido p 
-	on a.id_arbitro = p.ARBITRO_id_arbitro
-	group by nombre, apellidos ;
+	select e.nombre_equipo, SUM(g.minuto) as goles_marcados
+	from equipo e inner join fichajes f
+	on e.nombre_equipo = f.EQUIPO_nombre_equipo inner join jugador j
+	on f.JUGADOR_dni = j.dni inner join gol g
+	on j.dni = g.jugador_marca
+	group by e.nombre_equipo
+	order by goles_marcados desc;
 
 -- Segunda vista
 create view segunda as 
